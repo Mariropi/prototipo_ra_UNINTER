@@ -4,35 +4,22 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Protótipo RA - Localizador</title>
-    <!-- Versões estáveis e compatíveis com dispositivos móveis -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
   <body style="margin: 0; overflow: hidden;">
-    <a-scene 
-      embedded 
-      arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-      renderer="logarithmicDepthBuffer: true; colorManagement: true;">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
       
-      <!-- Pré-carregamento dos recursos -->
-      <a-assets>
-        <img id="mapa-img" src="./mapa.png" crossorigin="anonymous">
-      </a-assets>
-
       <!-- Marcador Hiro -->
       <a-marker preset="hiro">
-        <!-- Luz ambiente para garantir que a imagem não fica escura -->
-        <a-entity light="type: ambient; color: #FFF; intensity: 1.5"></a-entity>
-
-        <!-- Plano com a imagem do mapa projetada sobre o marcador -->
-        <a-plane 
-          src="#mapa-img" 
+        <!-- Imagem de teste via URL pública estável -->
+        <a-image 
+          src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png"
           position="0 0.2 0" 
           rotation="-90 0 0" 
-          width="2.2" 
-          height="1.6"
-          material="shader: flat; transparent: true; opacity: 0.98;">
-        </a-plane>
+          width="2" 
+          height="1.5">
+        </a-image>
       </a-marker>
 
       <a-entity camera></a-entity>
