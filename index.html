@@ -1,29 +1,294 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Protótipo RA - Localizador</title>
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-  </head>
-  <body style="margin: 0; overflow: hidden;">
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-      
-      <!-- Marcador Hiro -->
-      <a-marker preset="hiro">
-        <!-- Imagem de teste via URL pública estável -->
-        <a-image 
-          src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png"
-          position="0 0.2 0" 
-          rotation="-90 0 0" 
-          width="2" 
-          height="1.5">
-        </a-image>
-      </a-marker>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-      <a-entity camera></a-entity>
-    </a-scene>
-  </body>
+  <title>Hemácias em Realidade Aumentada</title>
+
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
+
+  <style>
+    /* Força o fundo totalmente transparente e sem margens */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: transparent !important;
+    }
+
+    /* Corrige o layout da câmera do AR.js */
+    body > video, 
+    video, 
+    .arjs-video {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+      z-index: -10 !important;
+    }
+
+    a-scene {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: transparent !important;
+    }
+
+    #titulo, #informacao, #status {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      text-align: center;
+      box-sizing: border-box;
+      pointer-events: none;
+    }
+
+    #titulo {
+      top: max(8px, env(safe-area-inset-top));
+      width: min(94%, 520px);
+      padding: 9px;
+      border-radius: 10px;
+      background: rgba(10, 35, 55, 0.88);
+      color: white;
+      font-size: clamp(12px, 3vw, 17px);
+      font-weight: bold;
+    }
+
+    #status {
+      top: 60px;
+      width: min(92%, 500px);
+      padding: 7px;
+      border-radius: 8px;
+      background: rgba(12, 48, 70, 0.85);
+      color: white;
+      font-size: 11px;
+    }
+
+    #informacao {
+      bottom: max(8px, env(safe-area-inset-bottom));
+      width: min(94%, 520px);
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      color: #263849;
+      font-size: 11px;
+      line-height: 1.3;
+      text-align: left;
+    }
+
+    #informacao strong {
+      display: block;
+      color: #a51d39;
+      margin-bottom: 3px;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    #informacao .tech {
+      margin-top: 4px;
+      font-size: 10px;
+      color: #555;
+      text-align: center;
+      border-top: 1px solid #ddd;
+      padding-top: 3px;
+    }
+
+    @media (orientation: landscape) {
+      #titulo {
+        top: 4px;
+        padding: 5px;
+        font-size: 12px;
+      }
+
+      #status {
+        top: 36px;
+        padding: 4px;
+      }
+
+      #informacao {
+        bottom: 4px;
+        padding: 6px;
+        font-size: 9.5px;
+      }
+    }
+  </style>
+
+  <script>
+    if (window.AFRAME) {
+      AFRAME.registerComponent("fluxo-sanguineo", {
+        init: function () {
+          const THREE = AFRAME.THREE;
+
+          this.grupo = new THREE.Group();
+          this.celulas = [];
+
+          this.el.setObject3D("mesh", this.grupo);
+
+          const materialVaso = new THREE.MeshPhongMaterial({
+            color: 0xe36a80,
+            transparent: true,
+            opacity: 0.28,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          });
+
+          const geometriaVaso = new THREE.CylinderGeometry(0.22, 0.22, 1.15, 48, 1, true);
+          geometriaVaso.rotateZ(Math.PI / 2);
+
+          this.grupo.add(new THREE.Mesh(geometriaVaso, materialVaso));
+
+          const materialBorda = new THREE.MeshPhongMaterial({
+            color: 0xf08ca0
+          });
+
+          [-0.575, 0.575].forEach(x => {
+            const anel = new THREE.Mesh(
+              new THREE.TorusGeometry(0.22, 0.012, 8, 48),
+              materialBorda
+            );
+            anel.rotation.y = Math.PI / 2;
+            anel.position.x = x;
+            this.grupo.add(anel);
+          });
+
+          const perfil = [
+            [0.000,  0.010],
+            [0.020,  0.012],
+            [0.045,  0.026],
+            [0.065,  0.039],
+            [0.080,  0.032],
+            [0.086,  0.010],
+            [0.086, -0.010],
+            [0.080, -0.032],
+            [0.065, -0.039],
+            [0.045, -0.026],
+            [0.020, -0.012],
+            [0.000, -0.010]
+          ].map(p => new THREE.Vector2(p[0], p[1]));
+
+          const geometriaHemacia = new THREE.LatheGeometry(perfil, 32);
+
+          const materialHemacia = new THREE.MeshPhongMaterial({
+            color: 0xd31d3c,
+            side: THREE.DoubleSide,
+            shininess: 75
+          });
+
+          for (let i = 0; i < 12; i++) {
+            const celula = new THREE.Mesh(geometriaHemacia, materialHemacia);
+            const fase = i / 12;
+
+            celula.position.set(
+              -0.50 + fase,
+              Math.sin(i * 2.1) * 0.07,
+              Math.cos(i * 1.7) * 0.07
+            );
+
+            celula.rotation.set(
+              0.5 + i * 0.15,
+              i * 0.35,
+              i * 0.2
+            );
+
+            this.grupo.add(celula);
+
+            this.celulas.push({
+              objeto: celula,
+              fase: fase,
+              indice: i,
+              velocidade: 0.12 + (i % 4) * 0.025
+            });
+          }
+        },
+
+        tick: function (tempo, delta) {
+          const dt = Math.min(delta || 0, 80) / 1000;
+
+          this.celulas.forEach(c => {
+            c.fase = (c.fase + c.velocidade * dt) % 1;
+
+            c.objeto.position.x = -0.50 + c.fase;
+            c.objeto.position.y = Math.sin(c.indice * 2.1 + c.fase * 5) * 0.07;
+            c.objeto.position.z = Math.cos(c.indice * 1.7 + c.fase * 4) * 0.07;
+
+            c.objeto.rotation.z += dt * 0.3;
+          });
+        }
+      });
+    }
+  </script>
+</head>
+
+<body>
+
+  <div id="titulo">
+    Circulação Sanguínea em Realidade Aumentada
+  </div>
+
+  <div id="status">
+    Aponte a câmara para o marcador Hiro (papel ou tela).
+  </div>
+
+  <div id="informacao">
+    <strong>Objetivo Educacional</strong>
+    Demonstrar visualmente o transporte de oxigênio através do fluxo de hemácias no interior de um vaso sanguíneo, facilitando o estudo da biologia humana.
+    <div class="tech">
+      <strong>Tecnologias:</strong> HTML5, A-Frame, Three.js e AR.js (WebAR)
+    </div>
+  </div>
+
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; antialias: true; alpha: true;"
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+
+    <a-entity light="type: ambient; intensity: 1.5"></a-entity>
+    <a-entity light="type: directional; intensity: 1" position="1 3 2"></a-entity>
+
+    <!-- Marcador Hiro associado ao vaso e animação das hemácias -->
+    <a-marker id="hiro" preset="hiro" emitevents="true">
+      <a-entity fluxo-sanguineo position="0 0.2 0" rotation="0 0 0" scale="0.6 0.6 0.6"></a-entity>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const marcador = document.getElementById("hiro");
+
+    marcador.addEventListener("markerFound", function () {
+      statusEl.textContent = "Marcador reconhecido! O vaso acompanha o movimento.";
+    });
+
+    marcador.addEventListener("markerLost", function () {
+      statusEl.textContent = "Aponte a câmara para o marcador Hiro (papel ou tela).";
+    });
+
+    window.addEventListener("orientationchange", function () {
+      setTimeout(() => {
+        window.dispatchEvent(new Event("resize"));
+      }, 500);
+    });
+
+    window.addEventListener("error", function (evento) {
+      if (evento.target && evento.target.tagName === "SCRIPT") {
+        statusEl.textContent = "Erro ao carregar biblioteca de RA.";
+      }
+    }, true);
+  </script>
+
+</body>
 </html>
-
